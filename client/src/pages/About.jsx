@@ -21,7 +21,7 @@ export default function About() {
           How the AI Works
         </h2>
         <p className="mb-4 text-gray-600">
-          RescueLink uses Google Gemini with a server-side wildlife system
+          RescueLink uses OpenRouter with a server-side wildlife system
           prompt designed around practical rescue guidance, feeding cautions,
           and escalation to professionals when the situation sounds severe.
         </p>
@@ -82,7 +82,7 @@ export default function About() {
             "Tailwind CSS v3 for styling",
             "Leaflet + OpenStreetMap for maps",
             "MongoDB + Mongoose for rescuer storage",
-            "Google Gemini for AI guidance",
+            "OpenRouter for AI guidance",
             "Hono on Node today, ready for Cloudflare deployment later",
           ].map((tech) => (
             <div key={tech} className="text-gray-600">

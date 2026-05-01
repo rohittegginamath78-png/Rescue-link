@@ -7,6 +7,14 @@ const initialAssistantMessage = {
     "Hi! Tell me about the animal you found and what's happening - I'll guide you on exactly what to do.",
 };
 
+const shouldLogChatDebug = import.meta.env.DEV;
+
+function logChatDebug(label, details = {}) {
+  if (!shouldLogChatDebug) return;
+
+  console.log(`[chat] ${label}`, details);
+}
+
 export function useChat() {
   const [messages, setMessages] = useState([initialAssistantMessage]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +46,8 @@ export function useChat() {
       try {
         let fullResponse = "";
         let hasReceivedToken = false;
+        let usage = null;
+        let generationId = null;
 
         for await (const event of streamChatMessage(
           trimmed,
@@ -56,6 +66,12 @@ export function useChat() {
               };
               return updated;
             });
+          } else if (event.type === "usage") {
+            usage = event.usage;
+            logChatDebug("openrouter usage", { usage });
+          } else if (event.type === "done") {
+            usage = event.usage || usage;
+            generationId = event.generationId || generationId;
           } else if (event.type === "error") {
             throw new Error(event.error || "Stream error");
           }
@@ -65,12 +81,20 @@ export function useChat() {
         if (!hasReceivedToken || !fullResponse.trim()) {
           throw new Error("Empty response from AI");
         }
+
+        logChatDebug("assistant final response", {
+          fullResponse,
+          characters: fullResponse.length,
+          usage,
+          generationId,
+        });
       } catch (err) {
         const errorMessage =
           err instanceof Error
             ? err.message
             : "AI guidance is unavailable right now.";
 
+        logChatDebug("ai failed", { error: errorMessage });
         setAiUnavailable(true);
         setIsAIFailed(true);
         setError(errorMessage);
@@ -103,6 +127,8 @@ export function useChat() {
   const clearMessages = useCallback(() => {
     setMessages([initialAssistantMessage]);
     setError(null);
+    setAiUnavailable(false);
+    setIsAIFailed(false);
   }, []);
 
   const retryLastMessage = useCallback(() => {

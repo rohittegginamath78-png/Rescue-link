@@ -8,7 +8,7 @@ Hono + Cloudflare Workers backend for RescueLink. Handles AI chat streaming and 
 
 - Node.js 18+
 - MongoDB running locally (`mongodb://localhost:27017/rescuelink`)
-- Gemini API key
+- OpenRouter API key
 
 ### Setup
 
@@ -26,8 +26,8 @@ Hono + Cloudflare Workers backend for RescueLink. Handles AI chat streaming and 
 
    Then fill in:
    - `MONGODB_URI` — your MongoDB connection string
-   - `GEMINI_API_KEY` — your Google AI Studio API key
-   - `GEMINI_MODEL` — optional model override, defaults to `gemini-2.5-flash`
+   - `OPENROUTER_API_KEY` — your OpenRouter API key
+   - `OPENROUTER_MODEL` — optional model override, defaults to `openai/gpt-4o-mini`
    - `CLIENT_URL` — frontend URL (http://localhost:5173 for dev)
 
 3. **Seed the database with rescuers**
@@ -185,14 +185,14 @@ Before deploying, set secrets:
 
 ```bash
 wrangler secret put MONGODB_URI
-wrangler secret put GEMINI_API_KEY
+wrangler secret put OPENROUTER_API_KEY
 ```
 
 ### Environment Variables (Production)
 
 - `MONGODB_URI` — Atlas or self-hosted
-- `GEMINI_API_KEY` — Google AI Studio API key
-- `GEMINI_MODEL` — optional model override
+- `OPENROUTER_API_KEY` — OpenRouter API key
+- `OPENROUTER_MODEL` — optional model override
 - `CLIENT_URL` — Your production frontend domain
 - `NODE_ENV` — Set to 'production'
 
@@ -241,8 +241,8 @@ All marked as `verified: true`. Future user submissions will have `verified: fal
 
 ### API Key Auth Failed
 
-- Verify `GEMINI_API_KEY` is correct and not expired
-- Check Google AI Studio usage limits
+- Verify `OPENROUTER_API_KEY` is correct and not expired
+- Check OpenRouter usage limits
 
 ### CORS Errors
 
