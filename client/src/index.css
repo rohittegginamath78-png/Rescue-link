@@ -65,9 +65,23 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply rounded bg-gray-100;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply rounded bg-gray-300;
+  @apply rounded bg-gray-300 opacity-0 transition-opacity;
+}
+
+/* Show scrollbar on hover */
+::-webkit-scrollbar-thumb:hover {
+  @apply opacity-100 bg-gray-400;
+}
+
+/* Show scrollbar track on parent hover */
+*:hover::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  @apply opacity-100;
 }

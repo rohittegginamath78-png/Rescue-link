@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ANIMALS } from "../constants/animals";
 import Badge from "../components/ui/Badge";
 import Pill from "../components/ui/Pill";
+import ChatDemo from "../components/landing/ChatDemo";
 
 export default function Landing() {
   return (
@@ -41,47 +42,7 @@ export default function Landing() {
           </div>
 
           <div className="mx-auto flex w-full max-w-md justify-center">
-            <div className="w-full rounded-[2rem] border border-gray-200 bg-white p-4 shadow-[0_30px_70px_rgba(26,46,6,0.14)]">
-              <div className="rounded-[1.6rem] bg-[#0f172a] p-3">
-                <div className="rounded-[1.2rem] bg-white p-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-[0.18em] text-green-700">
-                        Live preview
-                      </p>
-                      <p className="text-sm font-medium text-gray-900">
-                        Wildlife advisor
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-green-50 px-2 py-1 text-[11px] text-green-700">
-                      Online
-                    </span>
-                  </div>
-                  <div className="space-y-4 py-4">
-                    <div className="max-w-[82%] rounded-2xl rounded-tl-sm bg-gray-50 p-3 text-sm text-gray-700">
-                      Hi. Tell me what happened and I will guide you on what to
-                      do first.
-                    </div>
-                    <div className="ml-auto max-w-[76%] rounded-2xl rounded-tr-sm border border-green-200 bg-green-50 p-3 text-sm text-green-900">
-                      I found a baby squirrel on the road and it is cold.
-                    </div>
-                    <div className="max-w-[86%] rounded-2xl rounded-tl-sm bg-gray-50 p-3 text-sm leading-6 text-gray-700">
-                      Do this now: place it in a ventilated box lined with soft
-                      cloth and keep it warm. Avoid feeding milk. Is it injured
-                      or just weak?
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] text-gray-700">
-                      Can I feed it?
-                    </span>
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] text-gray-700">
-                      Find a rescuer
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ChatDemo />
           </div>
         </div>
       </section>
