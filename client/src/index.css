@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 {
+    @apply text-3xl font-medium tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-medium;
+  }
+
+  h3 {
+    @apply text-xl font-medium;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-green-50 transition-colors duration-200 hover:bg-green-800;
+  }
+
+  .btn-secondary {
+    @apply rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-900 transition-colors duration-200 hover:bg-gray-50;
+  }
+
+  .card {
+    @apply rounded-xl border border-gray-100 bg-white p-4 shadow-sm;
+  }
+
+  .message-ai {
+    @apply max-w-[88%] rounded-xl rounded-tl-sm bg-gray-50 text-sm leading-relaxed text-gray-800;
+  }
+
+  .message-user {
+    @apply ml-auto max-w-[82%] rounded-xl rounded-tr-sm border border-green-200 bg-green-50 text-sm text-green-900;
+  }
+}
+
+@media (max-width: 768px) {
+  .message-ai {
+    @apply max-w-[85%];
+  }
+
+  .message-user {
+    @apply max-w-[85%];
+  }
+}
+
+.leaflet-container {
+  font-family: 'Inter', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply rounded bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded bg-gray-300;
+}
