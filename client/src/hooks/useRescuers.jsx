@@ -32,21 +32,29 @@ export function useRescuers(city, userLat, userLng) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
+  const [matchedCity, setMatchedCity] = useState(null);
 
   const fetchAndSort = useCallback(
     async (specialty = null) => {
-      if (!city) {
+      const hasCoordinates =
+        typeof userLat === "number" && typeof userLng === "number";
+
+      if (!city && !hasCoordinates) {
         setRescuers([]);
+        setMatchedCity(null);
         return;
       }
 
       setLoading(true);
       setError(null);
+      setMatchedCity(null);
+      setRescuers([]);
 
       try {
-        const data = await fetchRescuers(city, specialty);
+        const data = await fetchRescuers(city, specialty, userLat, userLng);
+        setMatchedCity(data[0]?.matchedCity || city || "nearest coverage");
         const withDistance =
-          typeof userLat === "number" && typeof userLng === "number"
+          hasCoordinates
             ? data.map((rescuer) => ({
                 ...rescuer,
                 distance: getDistanceFromLatLonInKm(
@@ -74,8 +82,9 @@ export function useRescuers(city, userLat, userLng) {
         setRescuers(sorted.length > 0 ? sorted : FALLBACK_HELPLINES);
       } catch {
         setError(
-          `Could not fetch verified rescuers for ${city}. Showing general emergency helplines instead.`,
+          `Could not fetch verified rescuers for ${city || "your location"}. Showing general emergency helplines instead.`,
         );
+        setMatchedCity(city || null);
         setRescuers(FALLBACK_HELPLINES);
       } finally {
         setLoading(false);
@@ -92,6 +101,7 @@ export function useRescuers(city, userLat, userLng) {
     rescuers,
     loading,
     error,
+    matchedCity,
     selectedSpecialty,
     filterBySpecialty: setSelectedSpecialty,
     clearFilter: () => setSelectedSpecialty(null),

@@ -7,7 +7,7 @@ export default function Navbar() {
   const navLinks = [
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Animals', href: '/#animals' },
-    { label: 'Find Rescuer', href: '/rescuer' },
+    { label: 'Find Rescuer', href: '/find-rescuer' },
     { label: 'About', href: '/about' },
   ]
 

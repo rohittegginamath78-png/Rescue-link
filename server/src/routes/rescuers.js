@@ -4,6 +4,7 @@ import Rescuer from "../models/Rescuer.js";
 import {
   CITY_COORDINATES,
   findNearestKnownCity,
+  findNearestKnownCityByCoordinates,
   haversineDistanceKm,
   normalizeCity,
 } from "../utils/cities.js";
@@ -20,15 +21,48 @@ function buildQuery(city, specialty) {
   return query;
 }
 
+async function findFirstAvailableRescuers(rankedCities, specialty) {
+  for (const candidate of rankedCities) {
+    const rescuers = await Rescuer.find(buildQuery(candidate.city, specialty))
+      .sort({ available24hr: -1, createdAt: -1 })
+      .lean();
+
+    if (rescuers.length > 0) {
+      return { candidate, rescuers };
+    }
+  }
+
+  return null;
+}
+
 router.get("/", async (c) => {
   try {
     await connectDB();
 
     const city = c.req.query("city");
     const specialty = c.req.query("specialty");
+    const lat = Number(c.req.query("lat"));
+    const lng = Number(c.req.query("lng"));
+    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
 
-    if (!city) {
+    if (!city && !hasCoordinates) {
       return c.json({ error: "City parameter is required" }, 400);
+    }
+
+    if (hasCoordinates) {
+      const rankedCities = findNearestKnownCityByCoordinates(lat, lng);
+      const match = await findFirstAvailableRescuers(rankedCities, specialty);
+
+      if (match) {
+        return c.json(
+          match.rescuers.map((rescuer) => ({
+            ...rescuer,
+            requestedCity: city ? normalizeCity(city) : "current-location",
+            matchedCity: match.candidate.city,
+            cityDistanceKm: match.candidate.distanceKm,
+          })),
+        );
+      }
     }
 
     const normalizedCity = normalizeCity(city);
@@ -48,33 +82,30 @@ router.get("/", async (c) => {
       );
     }
 
-    const rankedCities = findNearestKnownCity(normalizedCity);
-    for (const candidate of rankedCities) {
-      if (candidate.city === normalizedCity) continue;
+    const rankedCities = findNearestKnownCity(normalizedCity).filter(
+      (candidate) => candidate.city !== normalizedCity,
+    );
+    const fallbackMatch = await findFirstAvailableRescuers(
+      rankedCities,
+      specialty,
+    );
 
-      const fallbackRescuers = await Rescuer.find(
-        buildQuery(candidate.city, specialty),
-      )
-        .sort({ available24hr: -1, createdAt: -1 })
-        .lean();
-
-      if (fallbackRescuers.length > 0) {
-        return c.json(
-          fallbackRescuers.map((rescuer) => ({
-            ...rescuer,
-            requestedCity: normalizedCity,
-            matchedCity: candidate.city,
-            cityDistanceKm:
-              CITY_COORDINATES[normalizedCity] &&
-              CITY_COORDINATES[candidate.city]
-                ? haversineDistanceKm(
-                    CITY_COORDINATES[normalizedCity],
-                    CITY_COORDINATES[candidate.city],
-                  )
-                : null,
-          })),
-        );
-      }
+    if (fallbackMatch) {
+      return c.json(
+        fallbackMatch.rescuers.map((rescuer) => ({
+          ...rescuer,
+          requestedCity: normalizedCity,
+          matchedCity: fallbackMatch.candidate.city,
+          cityDistanceKm:
+            CITY_COORDINATES[normalizedCity] &&
+            CITY_COORDINATES[fallbackMatch.candidate.city]
+              ? haversineDistanceKm(
+                  CITY_COORDINATES[normalizedCity],
+                  CITY_COORDINATES[fallbackMatch.candidate.city],
+                )
+              : null,
+        })),
+      );
     }
 
     return c.json([]);

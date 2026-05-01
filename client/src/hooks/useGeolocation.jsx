@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { normalizeCity } from "../utils/formatters";
+import { requestCurrentPosition } from "../utils/rescuerNavigation";
 
 export function useGeolocation() {
   const [location, setLocation] = useState(null);
@@ -33,15 +34,21 @@ export function useGeolocation() {
     setError(null);
 
     try {
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 10000,
-          enableHighAccuracy: false,
-        });
-      });
+      const position = await requestCurrentPosition();
 
       const { latitude, longitude } = position.coords;
-      setLocation({ lat: latitude, lng: longitude });
+      if ((position.coords.accuracy || Infinity) > 50000) {
+        setError(
+          "Your browser returned an approximate location. Enter your city manually for accurate rescuer results.",
+        );
+        return null;
+      }
+
+      setLocation({
+        lat: latitude,
+        lng: longitude,
+        accuracy: position.coords.accuracy,
+      });
 
       const cityName = await reverseGeocode(latitude, longitude);
       if (cityName) {
@@ -49,7 +56,12 @@ export function useGeolocation() {
       }
 
       setPermission("granted");
-      return { lat: latitude, lng: longitude, city: cityName };
+      return {
+        lat: latitude,
+        lng: longitude,
+        accuracy: position.coords.accuracy,
+        city: cityName,
+      };
     } catch (err) {
       if (err.code === 1) {
         setPermission("denied");
@@ -67,8 +79,39 @@ export function useGeolocation() {
     }
   }, [reverseGeocode]);
 
+  const useLocation = useCallback(
+    async ({ lat, lng }) => {
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        return null;
+      }
+
+      setLoading(true);
+      setError(null);
+      setLocation({ lat, lng });
+
+      try {
+        const cityName = await reverseGeocode(lat, lng);
+        if (cityName) {
+          setCity(cityName);
+        }
+
+        setPermission("granted");
+        return { lat, lng, city: cityName };
+      } catch {
+        setError("Unable to identify your city from this location.");
+        return { lat, lng, city: null };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [reverseGeocode],
+  );
+
   const setManualCity = useCallback((cityName) => {
+    setLocation(null);
     setCity(normalizeCity(cityName));
+    setPermission("prompt");
+    setError(null);
   }, []);
 
   return {
@@ -78,6 +121,7 @@ export function useGeolocation() {
     error,
     permission,
     requestLocation,
+    useLocation,
     setManualCity,
   };
 }

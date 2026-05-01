@@ -27,6 +27,15 @@ export default function ChatWindow({
     navigate("/find-rescuer");
   };
 
+  const handleQuickReply = (reply) => {
+    if (reply.toLowerCase().includes("rescuer")) {
+      void handleFindRescuer();
+      return;
+    }
+
+    onSendMessage(reply, selectedAnimal);
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="sticky top-0 border-b border-gray-100 bg-white p-4">
@@ -63,7 +72,7 @@ export default function ChatWindow({
                   index === messages.length - 1 && (
                     <QuickReplies
                       hidden={loading}
-                      onSelect={(reply) => onSendMessage(reply, selectedAnimal)}
+                      onSelect={handleQuickReply}
                     />
                   )}
               </>

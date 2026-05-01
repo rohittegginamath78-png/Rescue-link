@@ -41,6 +41,10 @@ export default function Chat() {
     setSelectorOpen(false);
   };
 
+  const handleFindRescuer = () => {
+    navigate("/find-rescuer");
+  };
+
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col bg-white md:flex-row">
       <aside className="border-b border-gray-100 bg-gray-50 p-4 md:w-[300px] md:border-b-0 md:border-r md:p-6">
@@ -101,7 +105,7 @@ export default function Chat() {
             Switch to the rescuer finder if the animal has serious injuries,
             bleeding, or is dangerous to handle.
           </p>
-          <Pill tone="green" onClick={() => navigate("/rescuer")}>
+          <Pill tone="green" onClick={handleFindRescuer}>
             Find rescuer instead
           </Pill>
         </div>

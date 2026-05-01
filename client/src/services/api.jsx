@@ -96,10 +96,17 @@ export async function* streamChatMessage(message, animal, conversationHistory) {
   }
 }
 
-export async function fetchRescuers(city, specialty = null) {
-  const params = { city };
+export async function fetchRescuers(city, specialty = null, lat = null, lng = null) {
+  const params = {};
+  if (city) {
+    params.city = city;
+  }
   if (specialty) {
     params.specialty = specialty;
+  }
+  if (typeof lat === "number" && typeof lng === "number") {
+    params.lat = lat;
+    params.lng = lng;
   }
   const response = await api.get("/api/rescuers", { params });
   return response.data;

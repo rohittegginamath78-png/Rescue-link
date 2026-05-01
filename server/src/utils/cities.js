@@ -47,6 +47,13 @@ export function findNearestKnownCity(city) {
   const requested = CITY_COORDINATES[normalizeCity(city)]
   if (!requested) return []
 
+  return findNearestKnownCityByCoordinates(requested.lat, requested.lng)
+}
+
+export function findNearestKnownCityByCoordinates(lat, lng) {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return []
+  const requested = { lat, lng }
+
   return Object.entries(CITY_COORDINATES)
     .map(([candidate, coords]) => ({
       city: candidate,

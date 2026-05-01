@@ -24,7 +24,7 @@ export default function Landing() {
               <Link to="/chat" className="btn-primary text-center">
                 Ask the AI advisor
               </Link>
-              <Link to="/rescuer" className="btn-secondary text-center">
+              <Link to="/find-rescuer" className="btn-secondary text-center">
                 Find a rescuer
               </Link>
             </div>
@@ -160,7 +160,7 @@ export default function Landing() {
               Start Chat
             </Link>
             <Link
-              to="/rescuer"
+              to="/find-rescuer"
               className="rounded-lg border-2 border-white px-6 py-3 text-center font-medium text-white transition-colors hover:bg-green-700"
             >
               Find Rescuer

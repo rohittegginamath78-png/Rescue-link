@@ -12,9 +12,7 @@ export default function RescuerCard({ rescuer }) {
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-medium text-gray-900">{rescuer.name}</h3>
-          {typeof rescuer.distance === 'number' && (
-            <p className="mt-1 text-xs text-gray-500">{rescuer.distance.toFixed(1)} km away</p>
-          )}
+          
         </div>
         {rescuer.available24hr && <Badge tone="green">24hr</Badge>}
       </div>
