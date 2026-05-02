@@ -21,6 +21,9 @@ export function normalizeCity(city) {
     hubli: "hubli-dharwad",
     hubballi: "hubli-dharwad",
     dharwad: "hubli-dharwad",
+    hoskote: "hubli-dharwad",
+    hoskate: "hubli-dharwad",
+    hoskota: "hubli-dharwad",
     belgaum: "belgaum",
     belagavi: "belgaum",
   };

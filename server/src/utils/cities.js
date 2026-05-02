@@ -10,6 +10,9 @@ export const CITY_ALIASES = {
   dharwad: 'hubli-dharwad',
   'hubli-dharwad': 'hubli-dharwad',
   'hubballi-dharwad': 'hubli-dharwad',
+  hoskote: 'hubli-dharwad',
+  hoskate: 'hubli-dharwad',
+  hoskota: 'hubli-dharwad',
   belagavi: 'belgaum',
   belgaum: 'belgaum',
 }
