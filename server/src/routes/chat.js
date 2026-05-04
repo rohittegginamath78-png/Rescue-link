@@ -2,38 +2,60 @@ import { Hono } from "hono";
 import { wildlifeSystemPrompt } from "../prompts/wildlifeSystemPrompt.js";
 
 const router = new Hono();
-const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
-const FALLBACK_GEMINI_MODEL = "gemini-2.0-flash";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini";
+const isDevelopment = process.env.NODE_ENV !== "production";
 
-function getGeminiErrorMessage(error) {
+function logChatDebug(label, details = {}) {
+  if (!isDevelopment) return;
+
+  console.log(`[chat] ${label}`, details);
+}
+
+function getOpenRouterErrorMessage(error) {
   const message = error?.error?.message || error?.message;
 
-  if (error?.status === 400 && typeof message === "string") {
-    return message;
+  if (error?.status === 401 || error?.status === 403) {
+    return "OpenRouter API key authentication failed. Check OPENROUTER_API_KEY in server/.env.";
   }
 
-  if (error?.status === 401 || error?.status === 403) {
-    return "Gemini API key authentication failed. Check GEMINI_API_KEY in server/.env.";
+  if (error?.status === 402) {
+    return "OpenRouter has no available credits for this key. Add credits or choose a free model in OPENROUTER_MODEL.";
   }
 
   if (error?.status === 429) {
-    if (
-      typeof message === "string" &&
-      message.includes("limit: 0") &&
-      message.includes("free_tier")
-    ) {
-      return "Gemini returned 0 available free-tier quota for this Google Cloud project. Check that the API key belongs to the intended AI Studio project, that Gemini API quota is enabled for the project, and that billing/free-tier access is active.";
-    }
-
-    return "Gemini rate limit or quota reached. Check your Google AI Studio usage limits.";
+    return "OpenRouter rate limit or quota reached. Check your OpenRouter usage limits.";
   }
 
-  return message || "AI response failed. Please try again.";
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+
+  return "AI response failed. Please try again.";
+}
+
+function getOpenRouterApiKey() {
+  if (process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
+  }
+
+  if (process.env.OPENAI_API_KEY?.startsWith("sk-or-")) {
+    return process.env.OPENAI_API_KEY;
+  }
+
+  return "";
 }
 
 function shouldUseLocalFallback(error) {
-  return isTemporaryGeminiModelError(error);
+  const message = error?.error?.message || error?.message || "";
+  const normalizedMessage =
+    typeof message === "string" ? message.toLowerCase() : "";
+
+  return (
+    error?.status === 503 ||
+    normalizedMessage.includes("overloaded") ||
+    normalizedMessage.includes("temporarily unavailable")
+  );
 }
 
 function getLocalFallbackResponse({ animal, message }) {
@@ -54,12 +76,13 @@ function getLocalFallbackResponse({ animal, message }) {
   ].join("\n\n");
 }
 
-function toGeminiContents(conversationHistory, message) {
+function toOpenRouterMessages({ systemPrompt, conversationHistory, message }) {
   const history = Array.isArray(conversationHistory)
     ? conversationHistory.slice(-10)
     : [];
 
   return [
+    { role: "system", content: systemPrompt },
     ...history
       .filter(
         (entry) =>
@@ -68,66 +91,43 @@ function toGeminiContents(conversationHistory, message) {
           entry.content.trim(),
       )
       .map((entry) => ({
-        role: entry.role === "assistant" ? "model" : "user",
-        parts: [{ text: entry.content }],
+        role: entry.role,
+        content: entry.content,
       })),
-    { role: "user", parts: [{ text: message }] },
+    { role: "user", content: message },
   ];
 }
 
-async function createGeminiStream({ apiKey, systemPrompt, contents }) {
-  const models = [
-    process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
-    FALLBACK_GEMINI_MODEL,
-  ].filter((model, index, allModels) => allModels.indexOf(model) === index);
+async function createOpenRouterStream({ apiKey, messages }) {
+  const model =
+    process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
 
-  let lastError;
+  logChatDebug("openrouter request", {
+    model,
+    messageCount: messages.length,
+    lastUserMessageLength: messages.at(-1)?.content?.length || 0,
+  });
 
-  for (const model of models) {
-    try {
-      return await createGeminiStreamForModel({
-        apiKey,
-        systemPrompt,
-        contents,
-        model,
-      });
-    } catch (error) {
-      lastError = error;
-
-      if (!isTemporaryGeminiModelError(error)) {
-        throw error;
-      }
-    }
-  }
-
-  throw lastError;
-}
-
-async function createGeminiStreamForModel({
-  apiKey,
-  systemPrompt,
-  contents,
-  model,
-}) {
-  const response = await fetch(
-    `${GEMINI_API_BASE_URL}/models/${model}:streamGenerateContent?alt=sse`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        contents,
-        generationConfig: {
-          maxOutputTokens: 700,
-        },
-      }),
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
+      "X-Title": "RescueLink",
     },
-  );
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: 700,
+      stream: true,
+    }),
+  });
+
+  logChatDebug("openrouter response", {
+    status: response.status,
+    generationId: response.headers.get("x-generation-id"),
+  });
 
   if (!response.ok) {
     let errorBody = {};
@@ -141,38 +141,27 @@ async function createGeminiStreamForModel({
   }
 
   if (!response.body) {
-    throw new Error("Gemini did not return a response stream.");
+    throw new Error("OpenRouter did not return a response stream.");
   }
 
-  return response.body;
+  return {
+    stream: response.body,
+    generationId: response.headers.get("x-generation-id"),
+    model,
+  };
 }
 
-function isTemporaryGeminiModelError(error) {
-  const message = error?.error?.message || error?.message || "";
-  const normalizedMessage =
-    typeof message === "string" ? message.toLowerCase() : "";
-
-  return (
-    error?.status === 503 ||
-    normalizedMessage.includes("high demand") ||
-    normalizedMessage.includes("overloaded") ||
-    normalizedMessage.includes("temporarily unavailable")
-  );
+function extractTextFromOpenRouterEvent(event) {
+  return event?.choices?.[0]?.delta?.content || "";
 }
 
-function extractTextFromGeminiEvent(event) {
-  return (
-    event?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || "")
-      .join("") || ""
-  );
-}
-
-async function pipeGeminiStreamToClient(geminiStream, controller, encoder) {
-  const reader = geminiStream.getReader();
+async function pipeOpenRouterStreamToClient(openRouterResponse, controller, encoder) {
+  const { stream: openRouterStream, generationId, model } = openRouterResponse;
+  const reader = openRouterStream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let fullResponse = "";
+  let usage = null;
 
   while (true) {
     const { value, done } = await reader.read();
@@ -189,10 +178,30 @@ async function pipeGeminiStreamToClient(geminiStream, controller, encoder) {
         .map((line) => line.slice(6).trim());
 
       for (const data of dataLines) {
-        if (!data) continue;
+        if (!data || data === "[DONE]") continue;
 
-        const event = JSON.parse(data);
-        const text = extractTextFromGeminiEvent(event);
+        let event;
+        try {
+          event = JSON.parse(data);
+        } catch (error) {
+          logChatDebug("ignored non-json stream payload", {
+            payloadPreview: data.slice(0, 80),
+            error: error instanceof Error ? error.message : String(error),
+          });
+          continue;
+        }
+
+        if (event.usage) {
+          usage = event.usage;
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "usage", usage })}\n\n`,
+            ),
+          );
+          continue;
+        }
+
+        const text = extractTextFromOpenRouterEvent(event);
 
         if (text) {
           fullResponse += text;
@@ -206,9 +215,16 @@ async function pipeGeminiStreamToClient(geminiStream, controller, encoder) {
     }
   }
 
+  logChatDebug("openrouter complete", {
+    model,
+    generationId,
+    responseLength: fullResponse.length,
+    usage,
+  });
+
   controller.enqueue(
     encoder.encode(
-      `data: ${JSON.stringify({ type: "done", fullResponse })}\n\n`,
+      `data: ${JSON.stringify({ type: "done", fullResponse, usage, generationId })}\n\n`,
     ),
   );
 }
@@ -222,10 +238,11 @@ router.post("/", async (c) => {
       return c.json({ error: "Message is required and must be a string" }, 400);
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getOpenRouterApiKey();
     if (!apiKey) {
+      logChatDebug("missing openrouter key");
       return c.json(
-        { error: "Gemini API key is missing on the server" },
+        { error: "OpenRouter API key is missing on the server" },
         500,
       );
     }
@@ -236,18 +253,30 @@ router.post("/", async (c) => {
     }
 
     const encoder = new TextEncoder();
-    const contents = toGeminiContents(conversationHistory, message);
+    const messages = toOpenRouterMessages({
+      systemPrompt,
+      conversationHistory,
+      message,
+    });
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          const geminiStream = await createGeminiStream({
+          const openRouterStream = await createOpenRouterStream({
             apiKey,
-            systemPrompt,
-            contents,
+            messages,
           });
 
-          await pipeGeminiStreamToClient(geminiStream, controller, encoder);
+          await pipeOpenRouterStreamToClient(
+            openRouterStream,
+            controller,
+            encoder,
+          );
         } catch (error) {
+          logChatDebug("openrouter error", {
+            status: error?.status,
+            message: error?.error?.message || error?.message || String(error),
+          });
+
           if (shouldUseLocalFallback(error)) {
             const text = getLocalFallbackResponse({ animal, message });
             controller.enqueue(
@@ -265,7 +294,7 @@ router.post("/", async (c) => {
 
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "error", error: getGeminiErrorMessage(error) })}\n\n`,
+              `data: ${JSON.stringify({ type: "error", error: getOpenRouterErrorMessage(error) })}\n\n`,
             ),
           );
         } finally {

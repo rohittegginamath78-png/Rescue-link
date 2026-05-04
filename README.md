@@ -10,7 +10,7 @@ RescueLink is a wildlife first-aid and rescuer finder web app. It gives users tw
 - Frontend: React 18, Vite, Tailwind CSS v3, React Router v6, Leaflet
 - Backend: Hono running locally on Node, with Cloudflare Worker config included
 - Database: MongoDB + Mongoose
-- AI: Google Gemini `gemini-2.5-flash` by default
+- AI: OpenRouter chat completions, `openai/gpt-4o-mini` by default
 
 ## Local setup
 
@@ -37,8 +37,8 @@ VITE_API_BASE_URL=http://localhost:5000
 ```bash
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/rescuelink
-GEMINI_API_KEY=AIza...
-GEMINI_MODEL=gemini-2.5-flash
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=openai/gpt-4o-mini
 CLIENT_URL=http://localhost:5173
 ```
 
@@ -80,7 +80,7 @@ New rescuer submissions are stored with `verified: false` and are excluded from 
 `POST /api/chat`
 
 - accepts `message`, `animal`, and `conversationHistory`
-- streams Gemini output as SSE-style `data:` chunks
+- streams OpenRouter chat output as SSE-style `data:` chunks
 - keeps the system prompt server-side
 - caps history to the latest 10 messages
 

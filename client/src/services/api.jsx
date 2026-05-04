@@ -8,7 +8,22 @@ const api = axios.create({
   timeout: 30000,
 });
 
+const shouldLogChatDebug = import.meta.env.DEV;
+
+function logChatDebug(label, details = {}) {
+  if (!shouldLogChatDebug) return;
+
+  console.log(`[chat] ${label}`, details);
+}
+
 export async function* streamChatMessage(message, animal, conversationHistory) {
+  logChatDebug("request", {
+    apiBaseUrl: API_BASE_URL,
+    animal,
+    messageLength: message.length,
+    historyCount: conversationHistory?.length || 0,
+  });
+
   const response = await fetch(`${API_BASE_URL}/api/chat`, {
     method: "POST",
     headers: {
@@ -21,6 +36,12 @@ export async function* streamChatMessage(message, animal, conversationHistory) {
     }),
   });
 
+  logChatDebug("response", {
+    ok: response.ok,
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+  });
+
   if (!response.ok) {
     let payload;
     try {
@@ -28,7 +49,9 @@ export async function* streamChatMessage(message, animal, conversationHistory) {
     } catch {
       payload = null;
     }
-    throw new Error(payload?.error || "Failed to get chat response");
+    const message = payload?.error || "Failed to get chat response";
+    logChatDebug("http error", { message });
+    throw new Error(message);
   }
 
   if (!response.body) {
@@ -57,7 +80,15 @@ export async function* streamChatMessage(message, animal, conversationHistory) {
         const payload = dataLine.slice(6).trim();
         if (!payload) continue;
 
-        yield JSON.parse(payload);
+        const event = JSON.parse(payload);
+        logChatDebug("stream event", {
+          type: event.type,
+          tokenLength: event.type === "token" ? event.text?.length || 0 : 0,
+          usage: event.usage,
+          generationId: event.generationId,
+          error: event.error,
+        });
+        yield event;
       }
     }
   } finally {
