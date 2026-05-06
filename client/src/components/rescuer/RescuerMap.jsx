@@ -1,10 +1,12 @@
 import L from "leaflet";
+import { useEffect } from "react";
 import {
   CircleMarker,
   MapContainer,
   Marker,
   Popup,
   TileLayer,
+  useMap,
 } from "react-leaflet";
 
 const rescuerIcon = new L.DivIcon({
@@ -29,6 +31,7 @@ export default function RescuerMap({ rescuers, userLat, userLng }) {
         scrollWheelZoom
         className="h-[200px] w-full md:h-[300px]"
       >
+        <RecenterMap center={center} />
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -63,4 +66,14 @@ export default function RescuerMap({ rescuers, userLat, userLng }) {
       </MapContainer>
     </div>
   );
+}
+
+function RecenterMap({ center }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, map.getZoom(), { animate: false });
+  }, [center, map]);
+
+  return null;
 }

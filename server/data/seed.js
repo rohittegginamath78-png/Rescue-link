@@ -1,325 +1,330 @@
-import dotenv from 'dotenv'
-import mongoose from 'mongoose'
-import Rescuer from '../src/models/Rescuer.js'
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import Admin from "../src/models/Admin.js";
+import Rescuer from "../src/models/Rescuer.js";
+import { normalizeCity } from "../src/utils/cities.js";
 
-dotenv.config()
+dotenv.config();
 
-const rescuerData = [
+const rawRescuerData = [
   {
-    name: 'People For Animals Wildlife Hospital',
-    city: 'bangalore',
-    phone: '+91-9900025370',
-    whatsapp: '+91-9980339880',
-    specialties: ['mammals', 'birds', 'reptiles'],
+    name: "People for Animals Bengaluru",
+    city: "bangalore",
+    phone: "+91-80-28611986",
+    whatsapp: "+91-9980339880",
+    specialties: ["wildlife", "dogs", "cats", "mammals"],
     available24hr: true,
-    lat: 12.9043,
-    lng: 77.4894,
-    address: 'Uttarahalli Main Road, Kengeri, Bengaluru',
+    lat: 12.9716,
+    lng: 77.5946,
+    address: "Wildlife Rescue and Conservation Centre, Bengaluru, Karnataka",
     verified: true,
   },
   {
-    name: 'Avian and Reptile Rehabilitation Centre',
-    city: 'bangalore',
-    phone: '+91-9449642222',
-    whatsapp: '+91-9449642222',
-    specialties: ['birds', 'reptiles'],
-    available24hr: false,
-    lat: 13.0487,
-    lng: 77.582,
-    address: 'Horamavu Main Road, Bengaluru',
-    verified: true,
-  },
-  {
-    name: 'Wildlife SOS Bannerghatta Bear Rescue Centre',
-    city: 'bangalore',
-    phone: '+91-7259039944',
-    whatsapp: '+91-7259039944',
-    specialties: ['mammals'],
-    available24hr: false,
-    lat: 12.8006,
-    lng: 77.577,
-    address: 'Bannerghatta Biological Park, Bengaluru',
-    verified: true,
-  },
-  {
-    name: 'Praana Animal Foundation',
-    city: 'bangalore',
-    phone: '+91-9036111007',
-    whatsapp: '+91-9036111007',
-    specialties: ['mammals', 'birds'],
-    available24hr: false,
-    lat: 12.9081,
-    lng: 77.5677,
-    address: 'Kumaraswamy Layout, Bengaluru',
-    verified: true,
-  },
-  {
-    name: 'Wildlife Rescue Bengaluru',
-    city: 'bangalore',
-    phone: '+91-9036111007',
-    whatsapp: '+91-9036111007',
-    specialties: ['reptiles', 'mammals'],
+    name: "People for Animals Hubballi-Dharwad",
+    city: "hubballi",
+    phone: "+91-9242239565",
+    whatsapp: "+91-9845799969",
+    specialties: ["wildlife", "dogs", "stray animals"],
     available24hr: true,
-    lat: 13.1026,
-    lng: 77.5616,
-    address: 'Vidyaranyapura, Bengaluru',
+    lat: 15.3647,
+    lng: 75.124,
+    address:
+      "At-pale, old Karuna Gaushala, near Shell petrol pump, NH-4, Pale, Hubballi, Dharwad, Karnataka",
     verified: true,
   },
   {
-    name: 'People For Animals Mysuru',
-    city: 'mysore',
-    phone: '+91-9845654429',
-    whatsapp: '+91-9845654429',
-    specialties: ['mammals', 'birds', 'reptiles'],
+    name: "Hubli Vidyanagar Wildlife Response (Demo)",
+    city: "hubli",
+    phone: "+91-9000002101",
+    whatsapp: "+91-9000002101",
+    specialties: ["birds", "stray dogs", "emergency rescue"],
+    available24hr: false,
+    lat: 15.3642,
+    lng: 75.1239,
+    address: "Vidyanagar, Hubli, Karnataka",
+    verified: true,
+  },
+  {
+    name: "Dharwad Animal Rescue Network (Demo)",
+    city: "dharwad",
+    phone: "+91-9000002102",
+    whatsapp: "+91-9000002102",
+    specialties: ["wildlife", "dogs", "cats"],
     available24hr: true,
-    lat: 12.3054,
-    lng: 76.6135,
-    address: 'Roopa Nagar, Bogadhi Village, Mysuru',
+    lat: 15.4589,
+    lng: 75.0078,
+    address: "Saptapur, Dharwad, Karnataka",
     verified: true,
   },
   {
-    name: 'PFA Mysuru Shelter',
-    city: 'mysore',
-    phone: '+91-8212598213',
-    whatsapp: '+91-9845654429',
-    specialties: ['mammals', 'birds'],
-    available24hr: false,
-    lat: 12.3054,
-    lng: 76.6135,
-    address: 'Bogadhi Village, Mysuru',
+    name: "Navanagar Rescue Volunteer Group (Demo)",
+    city: "hubli-dharwad",
+    phone: "+91-9000002103",
+    whatsapp: "+91-9000002103",
+    specialties: ["snakes", "reptiles", "wildlife"],
+    available24hr: true,
+    lat: 15.3928,
+    lng: 75.0834,
+    address: "Navanagar, Hubli-Dharwad, Karnataka",
     verified: true,
   },
   {
-    name: 'Mysuru Zoo Rescue Desk',
-    city: 'mysore',
-    phone: '+91-8212440752',
-    whatsapp: '+91-9845654429',
-    specialties: ['birds', 'mammals', 'reptiles'],
-    available24hr: false,
-    lat: 12.3014,
-    lng: 76.664,
-    address: 'Sri Chamarajendra Zoological Gardens, Mysuru',
-    verified: true,
-  },
-  {
-    name: 'Mysuru Rescue and Relief Helpline',
-    city: 'mysore',
-    phone: '+91-1070',
-    whatsapp: '+91-1070',
-    specialties: ['mammals', 'reptiles'],
+    name: "People for Animals Mysore",
+    city: "mysore",
+    phone: "+91-9845654429",
+    whatsapp: "+91-9845654429",
+    specialties: ["stray dogs", "cats", "wildlife"],
     available24hr: true,
     lat: 12.2958,
     lng: 76.6394,
-    address: 'District rescue line, Mysuru',
+    address: "PFA Mysore, Mysuru, Karnataka",
     verified: true,
   },
   {
-    name: 'Mysuru District Control Room',
-    city: 'mysore',
-    phone: '+91-1077',
-    whatsapp: '+91-1077',
-    specialties: ['birds', 'mammals', 'reptiles'],
-    available24hr: true,
-    lat: 12.2958,
-    lng: 76.6394,
-    address: 'District control room, Mysuru',
-    verified: true,
-  },
-  {
-    name: 'Animal Care Trust',
-    city: 'mangalore',
-    phone: '+91-8867021053',
-    whatsapp: '+91-8217580842',
-    specialties: ['mammals', 'birds'],
-    available24hr: true,
-    lat: 12.892,
-    lng: 74.8815,
-    address: 'Shaktinagar, Mangaluru',
-    verified: true,
-  },
-  {
-    name: 'Animal Care Trust Emergency Desk',
-    city: 'mangalore',
-    phone: '+91-8217580842',
-    whatsapp: '+91-8217580842',
-    specialties: ['birds', 'mammals'],
+    name: "Vijayanagar Mysore Animal Help (Demo)",
+    city: "mysore",
+    phone: "+91-9000002201",
+    whatsapp: "+91-9000002201",
+    specialties: ["stray dogs", "cats", "birds"],
     available24hr: false,
-    lat: 12.8697,
-    lng: 74.8424,
-    address: 'Pandeshwar, Mangaluru',
+    lat: 12.3182,
+    lng: 76.6177,
+    address: "Vijayanagar, Mysore, Karnataka",
     verified: true,
   },
   {
-    name: 'Dakshina Kannada District Control Room',
-    city: 'mangalore',
-    phone: '+91-1077',
-    whatsapp: '+91-1077',
-    specialties: ['reptiles', 'mammals'],
-    available24hr: true,
-    lat: 12.8704,
-    lng: 74.8808,
-    address: 'District helpline, Mangaluru',
-    verified: true,
-  },
-  {
-    name: 'Dakshina Kannada Rescue and Relief',
-    city: 'mangalore',
-    phone: '+91-1070',
-    whatsapp: '+91-1070',
-    specialties: ['mammals', 'birds', 'reptiles'],
+    name: "Mangalore Coastal Animal Rescue (Demo)",
+    city: "mangalore",
+    phone: "+91-9000002301",
+    whatsapp: "+91-9000002301",
+    specialties: ["wildlife", "birds", "stray animals"],
     available24hr: true,
     lat: 12.9141,
     lng: 74.856,
-    address: 'District rescue line, Mangaluru',
+    address: "Kadri, Mangalore, Karnataka",
     verified: true,
   },
   {
-    name: 'Animal Care Trust Shelter',
-    city: 'mangalore',
-    phone: '+91-8867021053',
-    whatsapp: '+91-9845255777',
-    specialties: ['mammals', 'birds'],
+    name: "Udupi-Mangalore Bird Rescue Desk (Demo)",
+    city: "mangalore",
+    phone: "+91-9000002302",
+    whatsapp: "+91-9000002302",
+    specialties: ["birds", "wildlife rehabilitation"],
     available24hr: false,
-    lat: 12.892,
-    lng: 74.8815,
-    address: 'Vatsalya Shelter, Shaktinagar, Mangaluru',
+    lat: 12.8697,
+    lng: 74.8424,
+    address: "Pandeshwar, Mangalore, Karnataka",
     verified: true,
   },
   {
-    name: 'People For Animals Hubballi-Dharwad',
-    city: 'hubli-dharwad',
-    phone: '+91-9242239565',
-    whatsapp: '+91-9845799969',
-    specialties: ['mammals', 'birds'],
-    available24hr: true,
-    lat: 15.3873,
-    lng: 75.1318,
-    address: 'Pale, behind Shell petrol pump, Hubballi',
-    verified: true,
-  },
-  {
-    name: 'PFA Hubballi Office',
-    city: 'hubli-dharwad',
-    phone: '+91-9845799978',
-    whatsapp: '+91-9845799969',
-    specialties: ['mammals', 'birds', 'reptiles'],
-    available24hr: false,
-    lat: 15.3504,
-    lng: 75.1386,
-    address: 'Dajibanpet, Hubballi',
-    verified: true,
-  },
-  {
-    name: 'Hubballi-Dharwad City Emergency Helpline',
-    city: 'hubli-dharwad',
-    phone: '+91-8362213888',
-    whatsapp: '+91-8362213888',
-    specialties: ['mammals', 'reptiles'],
-    available24hr: true,
-    lat: 15.3647,
-    lng: 75.124,
-    address: 'District emergency line, Hubballi-Dharwad',
-    verified: true,
-  },
-  {
-    name: 'Dharwad Animal Welfare Helpline',
-    city: 'hubli-dharwad',
-    phone: '+91-8277100200',
-    whatsapp: '+91-8277100200',
-    specialties: ['mammals', 'birds'],
-    available24hr: false,
-    lat: 15.4589,
-    lng: 75.0078,
-    address: 'Dharwad animal welfare response line',
-    verified: true,
-  },
-  {
-    name: 'Hubballi Wildlife Referral Desk',
-    city: 'hubli-dharwad',
-    phone: '+91-1077',
-    whatsapp: '+91-1077',
-    specialties: ['reptiles', 'mammals'],
-    available24hr: false,
-    lat: 15.3647,
-    lng: 75.124,
-    address: 'District control room, Hubballi-Dharwad',
-    verified: true,
-  },
-  {
-    name: 'Belgaum Animal Welfare Association',
-    city: 'belgaum',
-    phone: '+91-8867578792',
-    whatsapp: '+91-8867578792',
-    specialties: ['mammals', 'birds'],
-    available24hr: true,
-    lat: 15.8314,
-    lng: 74.5043,
-    address: 'Udyambag, Majgaon, Belagavi',
-    verified: true,
-  },
-  {
-    name: 'BAWA Emergency Response',
-    city: 'belgaum',
-    phone: '+91-8867578792',
-    whatsapp: '+91-8867578792',
-    specialties: ['mammals', 'birds'],
-    available24hr: false,
-    lat: 15.8497,
-    lng: 74.4977,
-    address: 'Belagavi rescue helpline',
-    verified: true,
-  },
-  {
-    name: 'Belagavi Rescue and Relief',
-    city: 'belgaum',
-    phone: '+91-1070',
-    whatsapp: '+91-1070',
-    specialties: ['mammals', 'reptiles'],
+    name: "Belgaum Wildlife Response Desk (Demo)",
+    city: "belgaum",
+    phone: "+91-9000002401",
+    whatsapp: "+91-9000002401",
+    specialties: ["snakes", "wildlife", "large animals"],
     available24hr: true,
     lat: 15.8497,
     lng: 74.4977,
-    address: 'District rescue and relief line, Belagavi',
+    address: "Tilakwadi, Belgaum, Karnataka",
     verified: true,
   },
   {
-    name: 'Belagavi District Control Room',
-    city: 'belgaum',
-    phone: '+91-1077',
-    whatsapp: '+91-1077',
-    specialties: ['reptiles', 'mammals'],
+    name: "Belagavi Stray Animal Support (Demo)",
+    city: "belagavi",
+    phone: "+91-9000002402",
+    whatsapp: "+91-9000002402",
+    specialties: ["dogs", "cats", "veterinary care"],
     available24hr: false,
     lat: 15.8631,
     lng: 74.502,
-    address: 'Belagavi district helpline',
+    address: "Shahapur, Belagavi, Karnataka",
     verified: true,
   },
   {
-    name: 'Belagavi Wildlife Referral Desk',
-    city: 'belgaum',
-    phone: '+91-8867578792',
-    whatsapp: '+91-8867578792',
-    specialties: ['birds', 'mammals', 'reptiles'],
-    available24hr: false,
-    lat: 15.8526,
-    lng: 74.5046,
-    address: 'Belagavi wildlife support network',
+    name: "Wildlife Ark Rehabilitation and Rescue Centre (WARRC)",
+    city: "bangalore",
+    phone: "+91-9449642222",
+    whatsapp: "+91-9449642222",
+    specialties: ["wildlife rehabilitation", "birds", "reptiles"],
+    available24hr: true,
+    lat: 13.0264,
+    lng: 77.6122,
+    address:
+      "No 8, 4th Main Road, Horamavu Main Road, Bengaluru, Karnataka 560043",
     verified: true,
   },
-]
+  {
+    name: "Karuna Animal Welfare Association of Karnataka",
+    city: "bangalore",
+    phone: "+91-80-23411181",
+    whatsapp: null,
+    specialties: ["stray dogs", "shelter", "veterinary care"],
+    available24hr: false,
+    lat: 13.0111,
+    lng: 77.5866,
+    address:
+      "Kasturba Road, Opposite Queens Statue, Bengaluru, Karnataka 560001",
+    verified: true,
+  },
+  {
+    name: "Karuna Animal Shelter",
+    city: "bangalore",
+    phone: "+91-80-23411181",
+    whatsapp: null,
+    specialties: ["stray dogs", "shelter", "veterinary care"],
+    available24hr: false,
+    lat: 13.0296,
+    lng: 77.5946,
+    address: "Veterinary College Campus, Hebbal, Bengaluru, Karnataka 560024",
+    verified: true,
+  },
+  {
+    name: "Dolma Dog Rescue",
+    city: "bylakuppe",
+    phone: "+91-9449642222",
+    whatsapp: null,
+    specialties: ["dogs", "stray dogs"],
+    available24hr: false,
+    lat: 12.45,
+    lng: 76.15,
+    address: "Old Camp No 1, Bylakuppe, Karnataka",
+    verified: true,
+  },
+  {
+    name: "Simba's Home",
+    city: "madikeri",
+    phone: "+91-8762922975",
+    whatsapp: "+91-8762922975",
+    specialties: ["dogs", "strays"],
+    available24hr: false,
+    lat: 12.5133,
+    lng: 75.7522,
+    address: "Madikeri, Karnataka",
+    verified: true,
+  },
+  {
+    name: "BBMP Animal & Wildlife Helpline",
+    city: "bangalore",
+    phone: "1533",
+    whatsapp: null,
+    specialties: ["urban wildlife", "stray animals", "emergency response"],
+    available24hr: true,
+    lat: 12.9716,
+    lng: 77.5946,
+    address: "BBMP Helpline, Bengaluru, Karnataka",
+    verified: true,
+  },
+  {
+    name: "Mahendra Singh (Large Animal Rescues)",
+    city: "bengaluru",
+    phone: "+91-9886869017",
+    whatsapp: "+91-9886869017",
+    specialties: ["large animals", "cattle", "horses"],
+    available24hr: true,
+    lat: 12.9716,
+    lng: 77.5946,
+    address: "Bengaluru, Karnataka (exact locality not publicly listed)",
+    verified: false,
+  },
+  {
+    name: "Wildlife Rescue Bengaluru (example placeholder)",
+    city: "bangalore",
+    phone: "+91-9036111007",
+    whatsapp: "+91-9036111007",
+    specialties: ["reptiles", "mammals"],
+    available24hr: true,
+    lat: 13.1026,
+    lng: 77.5616,
+    address: "Vidyaranyapura, Bengaluru",
+    verified: false,
+  },
+];
+
+function normalizeSpecialties(specialties = []) {
+  const normalized = new Set();
+
+  for (const specialty of specialties) {
+    const value = specialty.toLowerCase();
+
+    if (value.includes("wildlife")) {
+      normalized.add("mammals");
+      normalized.add("birds");
+      normalized.add("reptiles");
+    }
+    if (value.includes("bird")) normalized.add("birds");
+    if (value.includes("reptile") || value.includes("snake")) {
+      normalized.add("reptiles");
+    }
+    if (
+      value.includes("mammal") ||
+      value.includes("livestock") ||
+      value.includes("cattle") ||
+      value.includes("horse") ||
+      value.includes("large animal")
+    ) {
+      normalized.add("mammals");
+    }
+    if (
+      value.includes("dog") ||
+      value.includes("cat") ||
+      value.includes("stray") ||
+      value.includes("shelter")
+    ) {
+      normalized.add("dog-cat");
+    }
+    if (
+      value.includes("veterinary") ||
+      value.includes("emergency") ||
+      value === "other"
+    ) {
+      normalized.add("other");
+    }
+  }
+
+  return normalized.size > 0 ? [...normalized] : ["other"];
+}
+
+const rescuerData = rawRescuerData.map((rescuer) => ({
+  ...rescuer,
+  city: normalizeCity(rescuer.city),
+  whatsapp: rescuer.whatsapp || undefined,
+  specialties: normalizeSpecialties(rescuer.specialties),
+  status: rescuer.verified ? "approved" : "pending",
+  addedBy: "admin",
+  disabled: false,
+  verifiedAt: rescuer.verified ? new Date() : undefined,
+  submittedAt: new Date(),
+}));
 
 async function seedDatabase() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/rescuelink'
-    await mongoose.connect(mongoUri)
-    await Rescuer.deleteMany({})
-    const result = await Rescuer.insertMany(rescuerData)
+    const mongoUri =
+      process.env.MONGODB_URI || "mongodb://localhost:27017/rescuelink";
+    await mongoose.connect(mongoUri);
 
-    process.stdout.write(`Seeded ${result.length} rescuers\n`)
-    await mongoose.disconnect()
+    // Clear existing data
+    await Rescuer.deleteMany({});
+    await Admin.deleteMany({});
+
+    // Seed rescuers
+    const result = await Rescuer.insertMany(rescuerData);
+    process.stdout.write(`Seeded ${result.length} rescuers\n`);
+
+    // Create admin account
+    const adminAccount = await Admin.create({
+      email: "admin@rescuelink.com",
+      password: "SecurePassword123",
+      name: "Admin User",
+      isActive: true,
+      role: "super_admin",
+    });
+    process.stdout.write(`Created admin account: ${adminAccount.email}\n`);
+
+    await mongoose.disconnect();
   } catch (error) {
-    process.stderr.write(`Seeding failed: ${error.message}\n`)
-    process.exit(1)
+    process.stderr.write(`Seeding failed: ${error.message}\n`);
+    process.exit(1);
   }
 }
 
-seedDatabase()
+seedDatabase();

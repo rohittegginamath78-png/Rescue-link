@@ -1,23 +1,27 @@
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import chatRoutes from './routes/chat.js'
-import rescuerRoutes from './routes/rescuers.js'
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import chatRoutes from "./routes/chat.js";
+import rescuerRoutes from "./routes/rescuers.js";
+import adminRoutes from "./routes/admin.js";
 
-const app = new Hono()
+const app = new Hono();
 
 app.use(
-  '*',
+  "*",
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-  })
-)
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
-app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
-app.route('/api/chat', chatRoutes)
-app.route('/api/rescuers', rescuerRoutes)
-app.all('*', (c) => c.json({ error: 'Not Found' }, 404))
+app.get("/api/health", (c) =>
+  c.json({ status: "ok", timestamp: new Date().toISOString() }),
+);
+app.route("/api/chat", chatRoutes);
+app.route("/api/rescuers", rescuerRoutes);
+app.route("/api/admin", adminRoutes);
+app.all("*", (c) => c.json({ error: "Not Found" }, 404));
 
-export default app
+export default app;

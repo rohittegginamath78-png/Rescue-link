@@ -1,5 +1,9 @@
 import { useCallback, useState } from "react";
-import { normalizeCity } from "../utils/formatters";
+import {
+  findNearestSupportedCity,
+  getSupportedCityCoordinates,
+  normalizeCity,
+} from "../utils/formatters";
 
 export function useGeolocation() {
   const [location, setLocation] = useState(null);
@@ -16,9 +20,10 @@ export function useGeolocation() {
       const data = await response.json();
       const cityName =
         data.address?.city ||
-        data.address?.suburb ||
         data.address?.town ||
         data.address?.village ||
+        data.address?.municipality ||
+        data.address?.suburb ||
         data.address?.county ||
         "Unknown";
 
@@ -35,16 +40,31 @@ export function useGeolocation() {
     try {
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 10000,
-          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 0,
+          enableHighAccuracy: true,
         });
       });
 
-      const { latitude, longitude } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
+
+      if (typeof accuracy === "number" && accuracy > 25000) {
+        setLocation(null);
+        setCity(null);
+        setError(
+          "Your browser returned an approximate location. Please enter your city manually for accurate rescuers.",
+        );
+        setPermission("granted");
+        return null;
+      }
+
       setLocation({ lat: latitude, lng: longitude });
 
-      const cityName = await reverseGeocode(latitude, longitude);
-      if (cityName) {
+      const cityName =
+        findNearestSupportedCity(latitude, longitude) ||
+        (await reverseGeocode(latitude, longitude));
+
+      if (cityName && cityName !== "unknown") {
         setCity(cityName);
       }
 
@@ -68,7 +88,9 @@ export function useGeolocation() {
   }, [reverseGeocode]);
 
   const setManualCity = useCallback((cityName) => {
-    setCity(normalizeCity(cityName));
+    const normalizedCity = normalizeCity(cityName);
+    setCity(normalizedCity);
+    setLocation(getSupportedCityCoordinates(normalizedCity));
   }, []);
 
   return {

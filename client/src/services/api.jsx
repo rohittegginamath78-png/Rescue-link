@@ -111,7 +111,7 @@ export async function fetchCitiesWithRescuers() {
 }
 
 export async function submitRescuerForm(data) {
-  const response = await api.post("/api/rescuers", data);
+  const response = await api.post("/api/rescuers/submit", data);
   return response.data;
 }
 

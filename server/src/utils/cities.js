@@ -1,6 +1,8 @@
 export const CITY_ALIASES = {
   bengaluru: "bangalore",
   bangalore: "bangalore",
+  "bangalore south": "bangalore",
+  "bengaluru south": "bangalore",
   mysuru: "mysore",
   mysore: "mysore",
   mangaluru: "mangalore",
@@ -8,7 +10,9 @@ export const CITY_ALIASES = {
   hubli: "hubli-dharwad",
   hubballi: "hubli-dharwad",
   dharwad: "hubli-dharwad",
+  "hubli dharwad": "hubli-dharwad",
   "hubli-dharwad": "hubli-dharwad",
+  "hubballi dharwad": "hubli-dharwad",
   "hubballi-dharwad": "hubli-dharwad",
   hoskote: "hubli-dharwad",
   hoskate: "hubli-dharwad",
@@ -22,6 +26,8 @@ export const CITY_COORDINATES = {
   mysore: { lat: 12.2958, lng: 76.6394 },
   mangalore: { lat: 12.9141, lng: 74.856 },
   "hubli-dharwad": { lat: 15.3647, lng: 75.124 },
+  bylakuppe: { lat: 12.45, lng: 76.15 },
+  madikeri: { lat: 12.5133, lng: 75.7522 },
   belgaum: { lat: 15.8497, lng: 74.4977 },
 };
 

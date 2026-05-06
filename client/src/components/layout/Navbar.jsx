@@ -8,6 +8,7 @@ export default function Navbar() {
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Animals', href: '/#animals' },
     { label: 'Find Rescuer', href: '/rescuer' },
+    { label: 'Know a Rescuer?', href: '/know-a-rescuer' },
     { label: 'About', href: '/about' },
   ]
 

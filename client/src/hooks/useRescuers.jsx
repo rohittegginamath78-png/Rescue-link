@@ -2,31 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchRescuers } from "../services/api";
 import { getDistanceFromLatLonInKm } from "../utils/formatters";
 
-const FALLBACK_HELPLINES = [
-  {
-    name: "Wildlife SOS",
-    phone: "+91-7259039944",
-    whatsapp: "+91-7259039944",
-    specialties: ["mammals"],
-    available24hr: false,
-    address: "Bannerghatta Biological Park, Bengaluru",
-    lat: 12.8006,
-    lng: 77.577,
-    isFallback: true,
-  },
-  {
-    name: "People For Animals Wildlife Hospital",
-    phone: "+91-9900025370",
-    whatsapp: "+91-9980339880",
-    specialties: ["mammals", "birds", "reptiles"],
-    available24hr: true,
-    address: "Uttarahalli Main Road, Kengeri, Bengaluru",
-    lat: 12.9043,
-    lng: 77.4894,
-    isFallback: true,
-  },
-];
-
 export function useRescuers(city, userLat, userLng) {
   const [rescuers, setRescuers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +17,7 @@ export function useRescuers(city, userLat, userLng) {
 
       setLoading(true);
       setError(null);
+      setRescuers([]);
 
       try {
         const data = await fetchRescuers(city, specialty);
@@ -71,12 +47,12 @@ export function useRescuers(city, userLat, userLng) {
           return 0;
         });
 
-        setRescuers(sorted.length > 0 ? sorted : FALLBACK_HELPLINES);
+        setRescuers(sorted);
       } catch {
         setError(
-          `Could not fetch verified rescuers for ${city}. Showing general emergency helplines instead.`,
+          `Could not fetch verified rescuers for ${city}. Please try again or enter your city manually.`,
         );
-        setRescuers(FALLBACK_HELPLINES);
+        setRescuers([]);
       } finally {
         setLoading(false);
       }
