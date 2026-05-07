@@ -5,8 +5,9 @@ import {
   normalizeCity,
 } from "../utils/formatters";
 
-const GEOLOCATION_TIMEOUT_MS = 20000;
-const REVERSE_GEOCODE_TIMEOUT_MS = 8000;
+const GEOLOCATION_TIMEOUT_MS = 5000;
+const REVERSE_GEOCODE_TIMEOUT_MS = 2500;
+const GEOLOCATION_CACHE_MS = 5 * 60 * 1000;
 const FALLBACK_CITY_RADIUS_KM = 250;
 const MAX_TRUSTED_ACCURACY_METERS = 25000;
 const DEFAULT_CITY = "hubli-dharwad";
@@ -17,6 +18,18 @@ export function useGeolocation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [permission, setPermission] = useState("prompt");
+
+  const useDefaultCity = useCallback((message = null) => {
+    const defaultLocation = getSupportedCityCoordinates(DEFAULT_CITY);
+    setLocation(defaultLocation);
+    setCity(DEFAULT_CITY);
+    setError(message);
+    setPermission("granted");
+    return {
+      ...defaultLocation,
+      city: DEFAULT_CITY,
+    };
+  }, []);
 
   const reverseGeocode = useCallback(async (lat, lng) => {
     const controller = new AbortController();
@@ -60,8 +73,8 @@ export function useGeolocation() {
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           timeout: GEOLOCATION_TIMEOUT_MS,
-          maximumAge: 0,
-          enableHighAccuracy: true,
+          maximumAge: GEOLOCATION_CACHE_MS,
+          enableHighAccuracy: false,
         });
       });
 
@@ -71,30 +84,31 @@ export function useGeolocation() {
         typeof accuracy === "number" &&
         accuracy > MAX_TRUSTED_ACCURACY_METERS
       ) {
-        const defaultLocation = getSupportedCityCoordinates(DEFAULT_CITY);
-        setLocation(defaultLocation);
-        setCity(DEFAULT_CITY);
-               setPermission("granted");
-        return {
-          ...defaultLocation,
-          city: DEFAULT_CITY,
-        };
+        return useDefaultCity(
+          "Your browser returned an approximate location, so RescueLink is showing Hubli-Dharwad. Use Change city if needed.",
+        );
       }
 
       setLocation({ lat: latitude, lng: longitude });
 
+      const nearestSupportedCity = findNearestSupportedCity(
+        latitude,
+        longitude,
+        FALLBACK_CITY_RADIUS_KM,
+      );
+      if (nearestSupportedCity) {
+        setCity(nearestSupportedCity);
+        setPermission("granted");
+        return { lat: latitude, lng: longitude, city: nearestSupportedCity };
+      }
+
       const geocodedCity = await reverseGeocode(latitude, longitude);
-      const cityName =
-        geocodedCity ||
-        findNearestSupportedCity(latitude, longitude, FALLBACK_CITY_RADIUS_KM);
+      const cityName = geocodedCity;
 
       if (!cityName || cityName === "unknown") {
-        setCity(null);
-        setError(
-          "We found your coordinates, but could not match them to a supported city. Please enter your city manually.",
+        return useDefaultCity(
+          "We could not match your coordinates to a supported city, so RescueLink is showing Hubli-Dharwad. Use Change city if needed.",
         );
-        setPermission("granted");
-        return null;
       }
 
       setCity(cityName);
@@ -106,16 +120,20 @@ export function useGeolocation() {
         setError(
           "Location permission denied. You can enter your city manually instead.",
         );
+        return null;
       } else if (err.code === 3) {
-        setError("Location request timed out. Please try again.");
-      } else {
-        setError("Unable to get your location. Please try again.");
+        return useDefaultCity(
+          "Location took too long, so RescueLink is showing Hubli-Dharwad. Use Change city if needed.",
+        );
       }
-      return null;
+
+      return useDefaultCity(
+        "Unable to get your exact location, so RescueLink is showing Hubli-Dharwad. Use Change city if needed.",
+      );
     } finally {
       setLoading(false);
     }
-  }, [reverseGeocode]);
+  }, [reverseGeocode, useDefaultCity]);
 
   const setManualCity = useCallback((cityName) => {
     const normalizedCity = normalizeCity(cityName);
