@@ -24,9 +24,10 @@ export function useChat() {
   const [isAIFailed, setIsAIFailed] = useState(false);
 
   const sendMessage = useCallback(
-    async (userMessage, animal) => {
+    async (userMessage, animal, image = null) => {
       const trimmed = userMessage.trim();
-      if (!trimmed || loading) return;
+      if ((!trimmed && !image?.dataUrl) || loading) return;
+      const messageText = trimmed || "Please look at this animal photo and tell me what first-aid steps are safe.";
 
       const historySnapshot = messages
         .filter((message) => message.content?.trim())
@@ -34,14 +35,19 @@ export function useChat() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "user", content: trimmed },
+        {
+          role: "user",
+          content: messageText,
+          imagePreview: image?.dataUrl || null,
+          imageName: image?.name || null,
+        },
         { role: "assistant", content: "", isFallback: false },
       ]);
       setLoading(true);
       setError(null);
       setAiUnavailable(false);
       setIsAIFailed(false);
-      setLastPayload({ message: trimmed, animal });
+      setLastPayload({ message: messageText, animal, image });
 
       try {
         let fullResponse = "";
@@ -50,9 +56,10 @@ export function useChat() {
         let generationId = null;
 
         for await (const event of streamChatMessage(
-          trimmed,
+          messageText,
           animal,
           historySnapshot,
+          image,
         )) {
           if (event.type === "token") {
             hasReceivedToken = true;
@@ -133,7 +140,7 @@ export function useChat() {
 
   const retryLastMessage = useCallback(() => {
     if (!lastPayload || loading) return;
-    void sendMessage(lastPayload.message, lastPayload.animal);
+    void sendMessage(lastPayload.message, lastPayload.animal, lastPayload.image);
   }, [lastPayload, loading, sendMessage]);
 
   return {

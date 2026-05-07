@@ -16,12 +16,18 @@ function logChatDebug(label, details = {}) {
   console.log(`[chat] ${label}`, details);
 }
 
-export async function* streamChatMessage(message, animal, conversationHistory) {
+export async function* streamChatMessage(
+  message,
+  animal,
+  conversationHistory,
+  image = null,
+) {
   logChatDebug("request", {
     apiBaseUrl: API_BASE_URL,
     animal,
     messageLength: message.length,
     historyCount: conversationHistory?.length || 0,
+    hasImage: Boolean(image?.dataUrl),
   });
 
   const response = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -33,6 +39,7 @@ export async function* streamChatMessage(message, animal, conversationHistory) {
       message,
       animal,
       conversationHistory,
+      image,
     }),
   });
 

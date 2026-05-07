@@ -92,7 +92,7 @@ export default function ChatWindow({
       <div className="space-y-3 border-t border-gray-100 bg-white p-4">
         <DisclaimerBanner />
         <ChatInput
-          onSend={(text) => onSendMessage(text, selectedAnimal)}
+          onSend={(text, image) => onSendMessage(text, selectedAnimal, image)}
           disabled={loading}
           placeholder="Tell me about the animal..."
         />
