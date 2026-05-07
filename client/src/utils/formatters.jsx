@@ -24,11 +24,19 @@ export function formatSpecialty(specialty) {
 export function normalizeCity(city) {
   if (!city) return "";
 
+  const normalized = city
+    .toLowerCase()
+    .trim()
+    .replace(/[,_]+/g, " ")
+    .replace(/\s+/g, " ");
+
   const aliases = {
     bengaluru: "bangalore",
     bangalore: "bangalore",
     "bangalore south": "bangalore",
     "bengaluru south": "bangalore",
+    "bangalore urban": "bangalore",
+    "bengaluru urban": "bangalore",
     mysuru: "mysore",
     mysore: "mysore",
     mangaluru: "mangalore",
@@ -40,22 +48,34 @@ export function normalizeCity(city) {
     "hubli-dharwad": "hubli-dharwad",
     "hubballi dharwad": "hubli-dharwad",
     "hubballi-dharwad": "hubli-dharwad",
-    hoskote: "hubli-dharwad",
-    hoskate: "hubli-dharwad",
-    hoskota: "hubli-dharwad",
+    "hubballi taluk": "hubli-dharwad",
+    "hubli taluk": "hubli-dharwad",
+    "dharwad district": "hubli-dharwad",
     belgaum: "belgaum",
     belagavi: "belgaum",
   };
 
-  return aliases[city.toLowerCase().trim()] || city.toLowerCase().trim();
+  if (aliases[normalized]) return aliases[normalized];
+
+  if (/\b(bengaluru|bangalore)\b/.test(normalized)) return "bangalore";
+  if (/\b(mysuru|mysore)\b/.test(normalized)) return "mysore";
+  if (/\b(mangaluru|mangalore)\b/.test(normalized)) return "mangalore";
+  if (/\b(hubballi|hubli|dharwad)\b/.test(normalized)) {
+    return "hubli-dharwad";
+  }
+  if (/\b(belagavi|belgaum)\b/.test(normalized)) return "belgaum";
+
+  return normalized;
 }
 
 export const SUPPORTED_CITY_COORDINATES = {
   bangalore: { lat: 12.9716, lng: 77.5946 },
   mysore: { lat: 12.2958, lng: 76.6394 },
+  mangalore: { lat: 12.9141, lng: 74.856 },
   "hubli-dharwad": { lat: 15.3647, lng: 75.124 },
   bylakuppe: { lat: 12.45, lng: 76.15 },
   madikeri: { lat: 12.5133, lng: 75.7522 },
+  belgaum: { lat: 15.8497, lng: 74.4977 },
 };
 
 export const MANUAL_CITY_OPTIONS = [

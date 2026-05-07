@@ -3,6 +3,8 @@ export const CITY_ALIASES = {
   bangalore: "bangalore",
   "bangalore south": "bangalore",
   "bengaluru south": "bangalore",
+  "bangalore urban": "bangalore",
+  "bengaluru urban": "bangalore",
   mysuru: "mysore",
   mysore: "mysore",
   mangaluru: "mangalore",
@@ -14,9 +16,9 @@ export const CITY_ALIASES = {
   "hubli-dharwad": "hubli-dharwad",
   "hubballi dharwad": "hubli-dharwad",
   "hubballi-dharwad": "hubli-dharwad",
-  hoskote: "hubli-dharwad",
-  hoskate: "hubli-dharwad",
-  hoskota: "hubli-dharwad",
+  "hubballi taluk": "hubli-dharwad",
+  "hubli taluk": "hubli-dharwad",
+  "dharwad district": "hubli-dharwad",
   belagavi: "belgaum",
   belgaum: "belgaum",
 };
@@ -33,8 +35,23 @@ export const CITY_COORDINATES = {
 
 export function normalizeCity(city) {
   if (!city) return "";
-  const normalized = city.toLowerCase().trim();
-  return CITY_ALIASES[normalized] || normalized;
+  const normalized = city
+    .toLowerCase()
+    .trim()
+    .replace(/[,_]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (CITY_ALIASES[normalized]) return CITY_ALIASES[normalized];
+
+  if (/\b(bengaluru|bangalore)\b/.test(normalized)) return "bangalore";
+  if (/\b(mysuru|mysore)\b/.test(normalized)) return "mysore";
+  if (/\b(mangaluru|mangalore)\b/.test(normalized)) return "mangalore";
+  if (/\b(hubballi|hubli|dharwad)\b/.test(normalized)) {
+    return "hubli-dharwad";
+  }
+  if (/\b(belagavi|belgaum)\b/.test(normalized)) return "belgaum";
+
+  return normalized;
 }
 
 export function haversineDistanceKm(a, b) {

@@ -100,6 +100,8 @@ export default function Rescuer() {
     if (result) {
       setShowManualCityInput(false);
       setManualCity("");
+    } else {
+      setShowManualCityInput(true);
     }
   };
 
@@ -158,6 +160,11 @@ export default function Rescuer() {
           onDeny={() => setShowManualCityInput(true)}
           loading={geolocation.loading}
         />
+        {geolocation.error && (
+          <p className="mx-auto mt-4 max-w-md text-center text-sm text-amber-700">
+            {geolocation.error}
+          </p>
+        )}
       </div>
     );
   }

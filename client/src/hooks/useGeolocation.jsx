@@ -5,6 +5,12 @@ import {
   normalizeCity,
 } from "../utils/formatters";
 
+const GEOLOCATION_TIMEOUT_MS = 20000;
+const REVERSE_GEOCODE_TIMEOUT_MS = 8000;
+const FALLBACK_CITY_RADIUS_KM = 250;
+const MAX_TRUSTED_ACCURACY_METERS = 25000;
+const DEFAULT_CITY = "hubli-dharwad";
+
 export function useGeolocation() {
   const [location, setLocation] = useState(null);
   const [city, setCity] = useState(null);
@@ -13,23 +19,32 @@ export function useGeolocation() {
   const [permission, setPermission] = useState("prompt");
 
   const reverseGeocode = useCallback(async (lat, lng) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      REVERSE_GEOCODE_TIMEOUT_MS,
+    );
+
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+        { signal: controller.signal },
       );
       const data = await response.json();
       const cityName =
         data.address?.city ||
         data.address?.town ||
-        data.address?.village ||
         data.address?.municipality ||
         data.address?.suburb ||
+        data.address?.village ||
         data.address?.county ||
-        "Unknown";
+        data.display_name;
 
       return normalizeCity(cityName);
     } catch {
       return null;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }, []);
 
@@ -38,36 +53,51 @@ export function useGeolocation() {
     setError(null);
 
     try {
+      if (!navigator.geolocation) {
+        throw new Error("Geolocation is not supported");
+      }
+
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 15000,
+          timeout: GEOLOCATION_TIMEOUT_MS,
           maximumAge: 0,
           enableHighAccuracy: true,
         });
       });
 
-      const { latitude, longitude, accuracy } = position.coords;
+      const { accuracy, latitude, longitude } = position.coords;
 
-      if (typeof accuracy === "number" && accuracy > 25000) {
-        setLocation(null);
+      if (
+        typeof accuracy === "number" &&
+        accuracy > MAX_TRUSTED_ACCURACY_METERS
+      ) {
+        const defaultLocation = getSupportedCityCoordinates(DEFAULT_CITY);
+        setLocation(defaultLocation);
+        setCity(DEFAULT_CITY);
+               setPermission("granted");
+        return {
+          ...defaultLocation,
+          city: DEFAULT_CITY,
+        };
+      }
+
+      setLocation({ lat: latitude, lng: longitude });
+
+      const geocodedCity = await reverseGeocode(latitude, longitude);
+      const cityName =
+        geocodedCity ||
+        findNearestSupportedCity(latitude, longitude, FALLBACK_CITY_RADIUS_KM);
+
+      if (!cityName || cityName === "unknown") {
         setCity(null);
         setError(
-          "Your browser returned an approximate location. Please enter your city manually for accurate rescuers.",
+          "We found your coordinates, but could not match them to a supported city. Please enter your city manually.",
         );
         setPermission("granted");
         return null;
       }
 
-      setLocation({ lat: latitude, lng: longitude });
-
-      const cityName =
-        findNearestSupportedCity(latitude, longitude) ||
-        (await reverseGeocode(latitude, longitude));
-
-      if (cityName && cityName !== "unknown") {
-        setCity(cityName);
-      }
-
+      setCity(cityName);
       setPermission("granted");
       return { lat: latitude, lng: longitude, city: cityName };
     } catch (err) {
