@@ -24,7 +24,7 @@ export default function ChatWindow({
   }, [messages]);
 
   const handleFindRescuer = () => {
-    navigate("/find-rescuer");
+    navigate("/rescuer");
   };
 
   return (
@@ -64,6 +64,7 @@ export default function ChatWindow({
                     <QuickReplies
                       hidden={loading}
                       onSelect={(reply) => onSendMessage(reply, selectedAnimal)}
+                      onFindRescuer={handleFindRescuer}
                     />
                   )}
               </>

@@ -2,11 +2,11 @@
 
 ## Overview
 
-RescueLink is a wildlife first-aid and rescuer discovery web application built for people who find injured, trapped, abandoned, or distressed animals and need quick guidance. The project combines an AI-powered first-aid chat experience with a verified local rescuer directory, map-based rescuer discovery, and an admin moderation system for managing rescuer records.
+RescueLink is a wildlife first-aid and rescuer discovery web application built for people who find injured, trapped, abandoned, or distressed animals and need quick guidance. The project combines an AI-powered first-aid chat experience, optional animal photo review, a verified local rescuer directory, map-based rescuer discovery, and an admin moderation system for managing rescuer records.
 
 The application is designed around two urgent user needs:
 
-1. Get immediate, calm, practical first-aid steps for a wild or domestic animal emergency.
+1. Get immediate, calm, practical first-aid steps for a wild or domestic animal emergency, with optional photo context.
 2. Find verified rescuers near the user's city and contact them quickly through phone, WhatsApp, or map directions.
 
 The current implementation focuses on Karnataka coverage, including Bangalore, Mysore, Mangalore, Hubli-Dharwad, Belgaum, Bylakuppe, and Madikeri data points. Hubli, Hubballi, Dharwad, and related aliases are normalized to `hubli-dharwad` so users can search using common city names.
@@ -18,6 +18,7 @@ When someone finds an injured animal, they often do not know whether to touch it
 RescueLink addresses this by providing:
 
 - A single place for emergency wildlife first-aid guidance.
+- Optional photo upload so users can share visual context with the AI chat.
 - A verified directory of rescuers.
 - City-based and location-assisted rescuer discovery.
 - Specialty filters for birds, mammals, reptiles, dog/cat rescue, and general rescue.
@@ -42,7 +43,7 @@ Secondary users:
 
 ### 1. AI Wildlife First-Aid Chat
 
-The chat feature lets users select an animal and describe the situation. The backend sends the message to an AI model through OpenRouter and streams the response back to the frontend in real time.
+The chat feature lets users select an animal, describe the situation, and optionally upload a photo of the animal. The backend sends the text and image context to an AI model through OpenRouter and streams the response back to the frontend in real time.
 
 Supported animals include:
 
@@ -67,7 +68,17 @@ The chat is intended to provide practical first-aid guidance such as:
 - When professional rescue help is required.
 - What not to do in risky situations.
 
-The AI prompt is stored on the server, not in frontend code. This keeps the safety instructions centralized and prevents exposing internal prompt logic to users.
+Photo support:
+
+- Users can attach one image per chat message.
+- Supported formats are JPG, PNG, and WebP.
+- The frontend validates image type and size before sending.
+- The user sees an image preview before submitting.
+- Uploaded images are shown inside the user chat bubble for context.
+- The backend validates image payloads and sends them to OpenRouter using a vision-compatible chat message format.
+- If image analysis fails during a demo or API issue, the backend streams a local safety fallback instead of leaving the user with no guidance.
+
+The AI prompt is stored on the server, not in frontend code. This keeps the safety instructions centralized and prevents exposing internal prompt logic to users. The prompt is written so the AI responds like a calm, experienced wildlife rescue volunteer speaking to a stressed person.
 
 ### 2. Rescuer Finder
 
@@ -223,7 +234,7 @@ Important pages:
 
 Important hooks:
 
-- `useChat` manages chat messages, streaming responses, loading state, and errors.
+- `useChat` manages chat messages, optional image attachments, streaming responses, loading state, and errors.
 - `useGeolocation` handles browser geolocation, reverse geocoding, fallback city behavior, and manual city selection.
 - `useRescuers` fetches rescuer data, applies specialty filters, computes distance, and sorts results.
 
@@ -289,8 +300,9 @@ Accepts:
 - `message`
 - `animal`
 - `conversationHistory`
+- `image` with a `dataUrl`, `name`, `type`, and `size` when a photo is uploaded
 
-Returns a streaming response with AI-generated first-aid guidance.
+Returns a streaming response with AI-generated first-aid guidance. If an image is included, the backend asks the model to describe only visible signs, avoid diagnosis certainty, and give safe first-aid steps.
 
 ### Public Rescuers
 
@@ -437,12 +449,25 @@ The AI chat is built as a first-aid helper, not as a replacement for professiona
 
 The AI is expected to:
 
-- Give calm and practical instructions.
+- Start with a reassuring sentence.
+- Give calm and practical instructions in short, scannable sections.
+- Use a rescue-volunteer tone rather than a textbook tone.
 - Avoid certainty in diagnosis.
 - Recommend professional rescue help for serious cases.
 - Warn users not to handle dangerous animals directly.
 - Encourage safe containment only when appropriate.
 - Avoid unsafe feeding or treatment instructions.
+- Mention what to avoid.
+- End with the disclaimer: "This advice is temporary first aid only and does not replace professional wildlife care."
+
+The current response structure is:
+
+- `What to do now:`
+- `Avoid:`
+- `Get professional help if:`
+- Short first-aid disclaimer
+
+For uploaded photos, the AI is instructed to use the image only for visible signs and not to diagnose from the image alone.
 
 The frontend also includes disclaimer messaging to make it clear that the guidance is informational and emergency cases should be handled by qualified rescuers or authorities.
 
@@ -496,6 +521,7 @@ PORT=5000
 MONGODB_URI=mongodb://localhost:27017/rescuelink
 OPENROUTER_API_KEY=your_openrouter_key
 OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=your_jwt_secret
 ```
@@ -538,6 +564,8 @@ npm run seed
 - City coverage is limited to seeded and approved rescuer data.
 - Browser geolocation can still be approximate depending on device, browser, and network.
 - The AI provides first-aid guidance but cannot physically verify animal condition.
+- Photo analysis can describe visible signs only and cannot confirm diagnosis, pain level, fracture, disease, or survival chances.
+- Vision support depends on the configured OpenRouter model supporting image input.
 - Some rescuer records may need periodic manual review to stay current.
 - Production deployment configuration exists, but full production hardening depends on final hosting and database choices.
 
@@ -548,7 +576,7 @@ Possible improvements:
 - Expand verified rescuer coverage across more cities and states.
 - Add rescuer availability schedules.
 - Add emergency authority contact shortcuts by region.
-- Add image upload for first-aid context.
+- Improve photo upload with multiple images, compression, and clearer image-quality guidance.
 - Add better geospatial querying with radius search.
 - Add admin analytics for submission volume and city coverage.
 - Add rescuer self-claim and profile update workflow.
@@ -559,4 +587,3 @@ Possible improvements:
 ## Project Value
 
 RescueLink is useful because it reduces confusion during animal emergencies. It gives users fast guidance, local contacts, map context, and a path to contribute new rescuer information. The admin approval workflow helps keep public contact data trustworthy, while the AI chat gives immediate first-aid direction until a qualified rescuer can be reached.
-
